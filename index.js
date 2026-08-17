@@ -22,7 +22,8 @@ client.once('ready', () => {
   console.log(`${client.user.tag} aktif! Project Swisty sistemleri tam sürüm hazır.`);
 });
 
-client.on('messageCreate', async message => {
+client.on('messageCreate', async message
+  => {
   if (!message.content.startsWith(PREFIX) || message.author.bot) return;
   const args = message.content.slice(PREFIX.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
