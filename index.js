@@ -4,7 +4,6 @@ const {
   TextInputBuilder, TextInputStyle, StringSelectMenuBuilder 
 } = require('discord.js');
 const http = require('http');
-const config = require('./config.json');
 
 const client = new Client({
   intents: [
@@ -17,6 +16,7 @@ const client = new Client({
 });
 
 const PREFIX = '!';
+const STAFF_LOG_ID = process.env.STAFF_LOG_ID; // Log kanalı Render panelinden alınacak
 
 client.once('ready', () => {
   console.log(`${client.user.tag} aktif! Project Swisty sistemleri tam sürüm hazır.`);
@@ -115,7 +115,7 @@ client.on('interactionCreate', async interaction => {
   // Modallar (Form Gönderimleri)
   if (interaction.isModalSubmit()) {
     if (interaction.customId === 'staff_modal') {
-      const logChannel = client.channels.cache.get(config.staffLogChannelId);
+      const logChannel = client.channels.cache.get(STAFF_LOG_ID);
       if (logChannel) logChannel.send({ embeds: [new EmbedBuilder().setTitle('Yeni Başvuru').setDescription(`Ad: ${interaction.fields.getTextInputValue('name')}\nYaş: ${interaction.fields.getTextInputValue('yas')}\nNeden: ${interaction.fields.getTextInputValue('why')}`)] });
       await interaction.reply({ content: 'Başvurun iletildi!', ephemeral: true });
     }
@@ -144,14 +144,14 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-// Render'ın Port Kontrolünü Geçmesi İçin Mini HTTP Sunucusu (7/24 Aktiflik)
+// Render 7/24 Port Sunucusu
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Project Swisty Bot aktif ve calisiyor!');
+  res.end('Project Swisty Bot aktif!');
 });
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Web sunucusu ${PORT} portunda calisiyor.`);
 });
 
-client.login(config.token);
+client.login(process.env.TOKEN);
