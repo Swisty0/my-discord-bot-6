@@ -3,6 +3,7 @@ const {
   ButtonBuilder, ButtonStyle, ChannelType, PermissionsBitField, ModalBuilder, 
   TextInputBuilder, TextInputStyle, StringSelectMenuBuilder 
 } = require('discord.js');
+const http = require('http');
 const config = require('./config.json');
 
 const client = new Client({
@@ -141,6 +142,16 @@ client.on('interactionCreate', async interaction => {
       await interaction.reply({ content: '✅ Embed başarıyla oluşturuldu ve gönderildi!', ephemeral: true });
     }
   }
+});
+
+// Render'ın Port Kontrolünü Geçmesi İçin Mini HTTP Sunucusu (7/24 Aktiflik)
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Project Swisty Bot aktif ve calisiyor!');
+});
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Web sunucusu ${PORT} portunda calisiyor.`);
 });
 
 client.login(config.token);
