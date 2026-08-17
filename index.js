@@ -1,6 +1,20 @@
 const { Client, GatewayIntentBits } = require('discord.js');
+const express = require('express');
 require('dotenv').config();
 
+// Render'ın uyku moduna girmesini önleyen Express sunucusu
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+    res.send('Project Swisty Bot 7/24 aktif!');
+});
+
+app.listen(PORT, () => {
+    console.log(`[EXPRESS] Web sunucusu ${PORT} portunda çalışıyor.`);
+});
+
+// Tüm modüllerin güvenli içe aktarılması
 const { registerPanelModule } = require('./modules/panel');
 const { registerHesaplarModule } = require('./modules/hesaplar');
 const { registerTempMailModule } = require('./modules/tempmail');
@@ -18,10 +32,10 @@ const client = new Client({
 });
 
 client.once('ready', () => {
-    console.log(`[ANA BOT] ${client.user.tag} aktif ve modüller başarıyla yüklendi!`);
+    console.log(`[ANA BOT] ${client.user.tag} aktif ve tüm modüller başarıyla yüklendi!`);
 });
 
-// Tüm modülleri ana cliente bağlıyoruz
+// Modüllerin ana cliente bağlanması
 registerPanelModule(client);
 registerHesaplarModule(client);
 registerTempMailModule(client);
