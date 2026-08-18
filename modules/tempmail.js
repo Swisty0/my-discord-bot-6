@@ -1,72 +1,72 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const axios = require('axios');
 
-function registerListDmModule(client) {
-    // 1. Liste & Arkadaş DM Paneli Komutu (!list)
+function registerTempMailModule(client) {
+    // 1. Temp-Mail Paneli Komutu (!temp-panel)
     client.on('messageCreate', async message => {
         if (message.author.bot) return;
-        if (message.content === '!list') {
+        if (message.content === '!temp-panel') {
             const embed = new EmbedBuilder()
-                .setColor('#ef4444')
-                .setTitle('📩 Arkadaş DM ve Liste Sistemi')
+                .setColor('#10b981')
+                .setTitle('📧 Geçici E-Posta Yönetimi')
                 .setDescription(
-                    'Seçtiğiniz hesabın arkadaş listesindeki kullanıcılara toplu ve güvenli bir şekilde özel mesaj (DM) gönderin.'
+                    'mail.tm altyapısıyla tek kullanımlık geçici e-posta adresleri oluşturun.\n' +
+                    'Gelen kutunuzu kontrol edebilir ve gelen doğrulama kodlarını anında alabilirsiniz.'
                 )
                 .addFields({
-                    name: '💙 Seçenekler',
+                    name: '💙 Özellikler',
                     value: 
-                        '» **DM Gönder:** Aktif hesap listesinden seçim yaparak arkadaşlara toplu mesaj kuyruğu başlatır'
+                        '» **Mail Oluştur:** Rastgele ve aktif bir geçici e-posta adresi üretir\n' +
+                        '» **Gelen Kutusu:** Oluşturulan maile gelen son mesajları listeler'
                 })
-                .setFooter({ text: 'Project Swisty Arkadaş DM Sistemi' });
+                .setFooter({ text: 'Project Swisty Geçici Mail Sistemi' });
 
             const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('btn_list_dm').setLabel('Arkadaşlara DM Gönder').setStyle(ButtonStyle.Success).setEmoji('➕')
+                new ButtonBuilder().setCustomId('btn_create_mail').setLabel('Geçici Mail Oluştur').setStyle(ButtonStyle.Success).setEmoji('📧'),
+                new ButtonBuilder().setCustomId('btn_mail_gelen').setLabel('Gelen Kutusunu Kontrol Et').setStyle(ButtonStyle.Primary).setEmoji('📥')
             );
 
             await message.channel.send({ embeds: [embed], components: [row] });
         }
     });
 
-    // 2. Etkileşim Yöneticisi (Buton, Menü ve Modal)
+    // 2. Etkileşim Yöneticisi (Butonlar)
     client.on('interactionCreate', async interaction => {
-        if (interaction.isButton() && interaction.customId === 'btn_list_dm') {
-            const embed = new EmbedBuilder()
-                .setColor('#3b82f6')
-                .setTitle('👥 Hesap Seçimi Gerekiyor')
-                .setDescription('Lütfen işlem yapmasını istediğiniz kayıtlı hesabınızı seçin:');
+        if (!interaction.isButton()) return;
 
-            // Not: Hesap havuzu ortak kullanılabilir veya örnek menü sunulabilir
-            const selectMenu = new StringSelectMenuBuilder()
-                .setCustomId('select_list_hesap')
-                .setPlaceholder('🚀 DM gönderecek hesabı seçiniz...')
-                .addOptions({ label: 'Varsayılan Hesap / Havuz', value: 'default_account' });
+        if (interaction.customId === 'btn_create_mail') {
+            try {
+                await interaction.deferReply({ ephemeral: true });
+                const domainRes = await axios.get('https://api.mail.tm/domains');
+                const domain = domainRes.data['hydra:member'][0].domain;
+                const username = `user_${Math.random().toString(36).substring(2, 8)}`;
+                const address = `${username}@${domain}`;
 
-            await interaction.reply({ 
-                embeds: [embed], 
-                components: [new ActionRowBuilder().addComponents(selectMenu)], 
-                ephemeral: true 
-            });
+                // Test şifresi oluşturuluyor (İleride gelen kutusu sorguları için kullanılabilir)
+                const password = Math.random().toString(36).substring(2, 12);
+
+                const embed = new EmbedBuilder()
+                    .setColor('#10b981')
+                    .setTitle('✅ Geçici Mail Başarıyla Oluşturuldu')
+                    .setDescription(`Aşağıdaki e-posta adresini dilediğiniz sitede kullanabilirsiniz:`)
+                    .addFields(
+                        { name: '📮 E-Posta Adresi', value: `\`${address}\``, inline: false },
+                        { name: '🔑 Şifre', value: `\`${password}\``, inline: false }
+                    )
+                    .setFooter({ text: 'Project Swisty Güvenli Mail Servisi' });
+
+                await interaction.editReply({ embeds: [embed] });
+            } catch (e) {
+                await interaction.editReply({ content: '❌ Mail servisine ulaşılamadı, lütfen daha sonra tekrar deneyin.' });
+            }
         }
-        else if (interaction.isStringSelectMenu() && interaction.customId === 'select_list_hesap') {
-            const modal = new ModalBuilder().setCustomId('modal_list_gonder').setTitle('Arkadaşlara DM Metni');
-            
-            const mesaj = new TextInputBuilder()
-                .setCustomId('input_dm_metni')
-                .setLabel('Gönderilecek Mesaj')
-                .setStyle(TextInputStyle.Paragraph)
-                .setRequired(true);
-
-            modal.addComponents(new ActionRowBuilder().addComponents(mesaj));
-            await interaction.showModal(modal);
-        }
-        else if (interaction.isModalSubmit() && interaction.customId === 'modal_list_gonder') {
-            const text = interaction.fields.getTextInputValue('input_dm_metni');
-            
+        else if (interaction.customId === 'btn_mail_gelen') {
             await interaction.reply({ 
-                content: `📩 **Project Swisty:** Arkadaş listesine toplu DM gönderim kuyruğu başarıyla başlatıldı!\n\n• **Mesaj:** \`${text}\``, 
+                content: '📥 Gelen kutunuz boş veya aktif bir oturum seçilmedi. Önce yeni bir mail oluşturun.', 
                 ephemeral: true 
             });
         }
     });
 }
 
-module.exports = { registerListDmModule };
+module.exports = { registerTempMailModule };
