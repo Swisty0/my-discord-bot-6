@@ -21,6 +21,7 @@ const { registerHesaplarModule } = require('./modules/hesaplar');
 const { registerTempMailModule } = require('./modules/tempmail');
 const { registerCopyModule } = require('./modules/kopyala');
 const { registerListDmModule } = require('./modules/listdm');
+const { registerStatsModule } = require('./modules/stats');
 
 const client = new Client({
     intents: [
@@ -44,5 +45,6 @@ registerTempMailModule(client);
 registerCopyModule(client);
 registerListDmModule(client);
 registerWelcomeModule(client);
+registerStatsModule(client);
 
 client.login(process.env.TOKEN);
