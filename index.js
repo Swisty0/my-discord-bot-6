@@ -28,7 +28,8 @@ const client = new Client({
         GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.DirectMessages
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.GuildMembers
     ]
 });
 
@@ -42,5 +43,6 @@ registerHesaplarModule(client);
 registerTempMailModule(client);
 registerCopyModule(client);
 registerListDmModule(client);
+registerWelcomeModule(client);
 
 client.login(process.env.TOKEN);
