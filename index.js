@@ -15,6 +15,7 @@ app.listen(PORT, () => {
 });
 
 // Tüm modüllerin güvenli içe aktarılması
+const { registerWelcomeModule } = require('./modules/welcome');
 const { registerPanelModule } = require('./modules/panel');
 const { registerHesaplarModule } = require('./modules/hesaplar');
 const { registerTempMailModule } = require('./modules/tempmail');
