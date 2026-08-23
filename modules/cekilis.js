@@ -1,17 +1,30 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 const giveaways = new Map();
 
 function registerCekilisModule(client) {
-    // Eğer bot açıldığında slash komutlarını otomatik kaydeden bir sistemin varsa buraya eklersin.
-    // Veya sadece etkileşimleri (interactionCreate) dinletmek için:
+    client.on('messageCreate', async message => {
+        if (message.author.bot) return;
 
-    client.on('interactionCreate', async interaction => {
-        // Komut çalıştırıldıysa (/çekiliş)
-        if (interaction.isChatInputCommand() && interaction.commandName === 'çekiliş') {
-            const prize = interaction.options.getString('ödül');
-            const durationMinutes = interaction.options.getInteger('süre');
-            const winnerCount = interaction.options.getInteger('kazanan');
+        // .çekiliş komutu kontrolü
+        if (message.content.startsWith('.çekiliş')) {
+            // Örnek kullanım: .çekiliş 5 1 Nitro
+            // arg[1]: süre (dakika), arg[2]: kazanan sayısı, arg[3...]: ödül
+            const args = message.content.trim().split(/ +/);
+            args.shift(); // .çekiliş kelimesini atla
+
+            const durationMinutes = parseInt(args[0]);
+            const winnerCount = parseInt(args[1]);
+            const prize = args.slice(2).join(' ');
+
+            if (!durationMinutes || !winnerCount || !prize) {
+                return message.reply({ 
+                    content: '❌ Hatalı kullanım! Örnek: `.çekiliş [süre_dakika] [kazanan_sayısı] [ödül]`\nÖrnek: `.çekiliş 5 1 Discord Nitro`' 
+                });
+            }
+
+            // Komut mesajını temizle (isteğe bağlı, şık durması için)
+            await message.delete().catch(() => {});
 
             const endTime = Date.now() + (durationMinutes * 60 * 1000);
             const endsTimestamp = Math.floor(endTime / 1000);
@@ -20,7 +33,7 @@ function registerCekilisModule(client) {
                 .setColor('#5865F2')
                 .setTitle('🎉 **ÇEKİLİŞ BAŞLADI!** 🎉')
                 .setDescription(`Aşağıdaki butona basarak çekilişe katılabilirsin!\n\n🎁 **Ödül:** **${prize}**\n👑 **Kazanan Sayısı:** \`${winnerCount} Kişi\`\n⏰ **Bitiş Zamanı:** <t:${endsTimestamp}:R>`)
-                .setFooter({ text: `${interaction.user.tag} tarafından düzenleniyor`, iconURL: interaction.user.displayAvatarURL() })
+                .setFooter({ text: `${message.author.tag} tarafından düzenleniyor`, iconURL: message.author.displayAvatarURL() })
                 .setTimestamp(endTime);
 
             const row = new ActionRowBuilder().addComponents(
@@ -30,21 +43,22 @@ function registerCekilisModule(client) {
                     .setStyle(ButtonStyle.Primary)
             );
 
-            const message = await interaction.reply({ embeds: [embed], components: [row], fetchReply: true });
+            const msg = await message.channel.send({ embeds: [embed], components: [row] });
             const participants = new Set();
 
-            giveaways.set(message.id, {
+            giveaways.set(msg.id, {
                 prize,
                 winnerCount,
                 participants,
                 endTime,
-                host: interaction.user.id,
-                ended: false
+                host: message.author.id,
+                ended: false,
+                channelId: message.channel.id
             });
 
             // Süre bitim kontrolü
             const interval = setInterval(async () => {
-                const giveaway = giveaways.get(message.id);
+                const giveaway = giveaways.get(msg.id);
                 if (!giveaway || giveaway.ended) {
                     clearInterval(interval);
                     return;
@@ -83,37 +97,39 @@ function registerCekilisModule(client) {
                             .setDisabled(true)
                     );
 
-                    await message.edit({ embeds: [endedEmbed], components: [disabledRow] });
-                    await interaction.followUp({ content: `🎉 Tebrikler ${winnersText}! **${prize}** ödülünü kazandın!` });
+                    await msg.edit({ embeds: [endedEmbed], components: [disabledRow] });
+                    await message.channel.send({ content: `🎉 Tebrikler ${winnersText}! **${prize}** ödülünü kazandın!` });
                 }
             }, 5000);
         }
+    });
 
-        // Butona tıklandığında
-        if (interaction.isButton() && interaction.customId === 'join_giveaway') {
-            const giveaway = giveaways.get(interaction.message.id);
+    // Buton etkileşimi (Katılma / Çıkma)
+    client.on('interactionCreate', async interaction => {
+        if (!interaction.isButton() || interaction.customId !== 'join_giveaway') return;
 
-            if (!giveaway || giveaway.ended) {
-                return interaction.reply({ content: '❌ Bu çekiliş sona ermiş!', ephemeral: true });
-            }
+        const giveaway = giveaways.get(interaction.message.id);
 
-            if (giveaway.participants.has(interaction.user.id)) {
-                giveaway.participants.delete(interaction.user.id);
-                const oldRow = interaction.message.components[0];
-                const newButton = ButtonBuilder.from(oldRow.components[0]).setLabel(`🎉 Çekilişe Katıl (${giveaway.participants.size})`);
-                const newRow = new ActionRowBuilder().addComponents(newButton);
+        if (!giveaway || giveaway.ended) {
+            return interaction.reply({ content: '❌ Bu çekiliş sona ermiş!', ephemeral: true });
+        }
 
-                await interaction.message.edit({ components: [newRow] });
-                return interaction.reply({ content: '❌ Çekilişten başarıyla çıkış yaptın!', ephemeral: true });
-            } else {
-                giveaway.participants.add(interaction.user.id);
-                const oldRow = interaction.message.components[0];
-                const newButton = ButtonBuilder.from(oldRow.components[0]).setLabel(`🎉 Çekilişe Katıl (${giveaway.participants.size})`);
-                const newRow = new ActionRowBuilder().addComponents(newButton);
+        if (giveaway.participants.has(interaction.user.id)) {
+            giveaway.participants.delete(interaction.user.id);
+            const oldRow = interaction.message.components[0];
+            const newButton = ButtonBuilder.from(oldRow.components[0]).setLabel(`🎉 Çekilişe Katıl (${giveaway.participants.size})`);
+            const newRow = new ActionRowBuilder().addComponents(newButton);
 
-                await interaction.message.edit({ components: [newRow] });
-                return interaction.reply({ content: '✅ Başarıyla çekilişe katıldın!', ephemeral: true });
-            }
+            await interaction.message.edit({ components: [newRow] });
+            return interaction.reply({ content: '❌ Çekilişten başarıyla çıkış yaptın!', ephemeral: true });
+        } else {
+            giveaway.participants.add(interaction.user.id);
+            const oldRow = interaction.message.components[0];
+            const newButton = ButtonBuilder.from(oldRow.components[0]).setLabel(`🎉 Çekilişe Katıl (${giveaway.participants.size})`);
+            const newRow = new ActionRowBuilder().addComponents(newButton);
+
+            await interaction.message.edit({ components: [newRow] });
+            return interaction.reply({ content: '✅ Başarıyla çekilişe katıldın!', ephemeral: true });
         }
     });
 }
