@@ -22,6 +22,7 @@ const { registerTempMailModule } = require('./modules/tempmail');
 const { registerCopyModule } = require('./modules/kopyala');
 const { registerListDmModule } = require('./modules/listdm');
 const { registerStatsModule } = require('./modules/stats');
+const { registerCekilisModule } = require('./modules/cekilis');
 
 const client = new Client({
     intents: [
@@ -30,8 +31,7 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages,
-        GatewayIntentBits.GuildMembers
-    ]
+        GatewayIntentBits.GuildMembers,    ]
 });
 
 client.once('ready', () => {
@@ -46,5 +46,6 @@ registerCopyModule(client);
 registerListDmModule(client);
 registerWelcomeModule(client);
 registerStatsModule(client);
+registerCekilisModule(client);
 
 client.login(process.env.TOKEN);
