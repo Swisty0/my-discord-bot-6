@@ -3,49 +3,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder
 const giveaways = new Map();
 
 function registerCekilisModule(client) {
-    client.on('messageCreate', async message => {
-        if (message.author.bot) return;
-
-        // .çekiliş yazıldığında kullanıcıya modal (açılır form) açtırıyoruz
-        if (message.content.trim() === '.çekiliş') {
-            const modal = new ModalBuilder()
-                .setCustomId('giveaway_modal')
-                .setTitle('🎉 Çekiliş Oluşturma Paneli');
-
-            const prizeInput = new TextInputBuilder()
-                .setCustomId('giveaway_prize')
-                .setLabel('Ödül Nedir?')
-                .setStyle(TextInputStyle.Short)
-                .setPlaceholder('Örn: Discord Nitro / 100M Para')
-                .setRequired(true);
-
-            const durationInput = new TextInputBuilder()
-                .setCustomId('giveaway_duration')
-                .setLabel('Süre (Dakika olarak)')
-                .setStyle(TextInputStyle.Short)
-                .setPlaceholder('Örn: 5')
-                .setRequired(true);
-
-            const winnersInput = new TextInputBuilder()
-                .setCustomId('giveaway_winners')
-                .setLabel('Kaç Kişi Kazansın?')
-                .setStyle(TextInputStyle.Short)
-                .setPlaceholder('Örn: 1')
-                .setRequired(true);
-
-            modal.addComponents(
-                new ActionRowBuilder().addComponents(prizeInput),
-                new ActionRowBuilder().addComponents(durationInput),
-                new ActionRowBuilder().addComponents(winnersInput)
-            );
-
-            // Mesajı silip modalı tetikleyemeyiz doğrudan mesaj üzerinden modal açılmaz, 
-            // bunun yerine kullanıcıya butonlu bir panel mesajı atabiliriz veya modal açtıran komut yapabiliriz.
-            // Discord API gereği mesajlar doğrudan modal açamaz, buton gerektirir!
-        }
-    });
-
-    // Bu yüzden .çekiliş yazıldığında direkt "Çekiliş Oluştur" butonu içeren bir panel atalım:
+    // .çekiliş yazıldığında yönetim paneli butonunu gönderir
     client.on('messageCreate', async message => {
         if (message.author.bot) return;
 
@@ -55,17 +13,13 @@ function registerCekilisModule(client) {
             const panelEmbed = new EmbedBuilder()
                 .setColor('#2b2d31')
                 .setTitle('🛠️ Çekiliş Yönetim Paneli')
-                .setDescription('Aşağıdaki **"Çekiliş Başlat"** butonuna tıklayarak açılan pencereden ödülü, süreyi ve kazanan sayısını kolayca belirleyebilirsin.');
+                .setDescription('Aşağıdaki **"Çekiliş Başlat"** butonuna tıklayarak açılan pencereden başlığı, ödülü, açıklamayı, rengi, süreyi ve kazanan sayısını kolayca belirleyebilirsin.');
 
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId('open_giveaway_modal')
                     .setLabel('🎁 Çekiliş Başlat')
-                    .setStyle(ButtonStyle.Success),
-                new ButtonBuilder()
-                    .setCustomId('active_giveaways_info')
-                    .setLabel('📊 Aktif Çekilişler / İstatistik')
-                    .setStyle(ButtonStyle.Secondary)
+                    .setStyle(ButtonStyle.Success)
             );
 
             await message.channel.send({ embeds: [panelEmbed], components: [row] });
@@ -74,11 +28,18 @@ function registerCekilisModule(client) {
 
     // Buton ve Modal Etkileşimleri
     client.on('interactionCreate', async interaction => {
-        // 1. "Çekiliş Başlat" butonuna basıldığında Modal aç
+        // 1. "Çekiliş Başlat" butonuna basıldığında modal formunu açar
         if (interaction.isButton() && interaction.customId === 'open_giveaway_modal') {
             const modal = new ModalBuilder()
                 .setCustomId('giveaway_modal')
-                .setTitle('🎉 Çekiliş Oluşturma Paneli');
+                .setTitle('🎉 Gelişmiş Çekiliş Oluşturucu');
+
+            const titleInput = new TextInputBuilder()
+                .setCustomId('giveaway_title')
+                .setLabel('Çekiliş Başlığı')
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder('Örn: 🎉 DEV ÇEKİLİŞ 🎉')
+                .setRequired(true);
 
             const prizeInput = new TextInputBuilder()
                 .setCustomId('giveaway_prize')
@@ -86,6 +47,20 @@ function registerCekilisModule(client) {
                 .setStyle(TextInputStyle.Short)
                 .setPlaceholder('Örn: Discord Nitro')
                 .setRequired(true);
+
+            const descInput = new TextInputBuilder()
+                .setCustomId('giveaway_desc')
+                .setLabel('Açıklama / Kurallar')
+                .setStyle(TextInputStyle.Paragraph)
+                .setPlaceholder('Katılım şartları veya ek açıklamalar yazabilirsiniz...')
+                .setRequired(false);
+
+            const colorInput = new TextInputBuilder()
+                .setCustomId('giveaway_color')
+                .setLabel('Embed Rengi (Hex Kod)')
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder('Örn: #5865F2 veya BLUE')
+                .setRequired(false);
 
             const durationInput = new TextInputBuilder()
                 .setCustomId('giveaway_duration')
@@ -102,7 +77,10 @@ function registerCekilisModule(client) {
                 .setRequired(true);
 
             modal.addComponents(
+                new ActionRowBuilder().addComponents(titleInput),
                 new ActionRowBuilder().addComponents(prizeInput),
+                new ActionRowBuilder().addComponents(descInput),
+                new ActionRowBuilder().addComponents(colorInput),
                 new ActionRowBuilder().addComponents(durationInput),
                 new ActionRowBuilder().addComponents(winnersInput)
             );
@@ -110,16 +88,12 @@ function registerCekilisModule(client) {
             return interaction.showModal(modal);
         }
 
-        // 2. Modal doldurulup gönderildiğinde çekilişi başlat
-        if (interaction.type === 4 && interaction.customId === 'giveaway_modal') { // Modal submit
-            // Discord.js v14 modal submit kontrolü:
-        }
-    });
-
-    // Modal Submit ve Buton Yönetimi için güncellenmiş dinleyici:
-    client.on('interactionCreate', async interaction => {
+        // 2. Modal gönderildiğinde çekilişi oluşturur
         if (interaction.isModalSubmit() && interaction.customId === 'giveaway_modal') {
+            const title = interaction.fields.getTextInputValue('giveaway_title');
             const prize = interaction.fields.getTextInputValue('giveaway_prize');
+            const description = interaction.fields.getTextInputValue('giveaway_desc') || 'Ek açıklama bulunmuyor.';
+            const color = interaction.fields.getTextInputValue('giveaway_color') || '#5865F2';
             const durationMinutes = parseInt(interaction.fields.getTextInputValue('giveaway_duration'));
             const winnerCount = parseInt(interaction.fields.getTextInputValue('giveaway_winners'));
 
@@ -131,13 +105,12 @@ function registerCekilisModule(client) {
             const endsTimestamp = Math.floor(endTime / 1000);
 
             const embed = new EmbedBuilder()
-                .setColor('#5865F2')
-                .setTitle('🎉 **ÇEKİLİŞ BAŞLADI!** 🎉')
-                .setDescription(`Aşağıdaki butona basarak çekilişe katılabilirsin!\n\n🎁 **Ödül:** **${prize}**\n👑 **Kazanan Sayısı:** \`${winnerCount} Kişi\`\n⏰ **Bitiş Zamanı:** <t:${endsTimestamp}:R>`)
+                .setColor(color)
+                .setTitle(title)
+                .setDescription(`${description}\n\n🎁 **Ödül:** **${prize}**\n👑 **Kazanan Sayısı:** \`${winnerCount} Kişi\`\n⏰ **Bitiş Zamanı:** <t:${endsTimestamp}:R>`)
                 .setFooter({ text: `${interaction.user.tag} tarafından düzenleniyor`, iconURL: interaction.user.displayAvatarURL() })
                 .setTimestamp(endTime);
 
-            // Katıl butonu + Detay / Oranları Göster butonu yan yana
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId('join_giveaway')
@@ -161,7 +134,7 @@ function registerCekilisModule(client) {
                 ended: false
             });
 
-            await interaction.reply({ content: '✅ Çekiliş başarıyla başlatıldı!', ephemeral: true });
+            await interaction.reply({ content: '✅ İstediğin ayarlarla çekiliş başarıyla başlatıldı!', ephemeral: true });
 
             // Süre bitim kontrolü
             const interval = setInterval(async () => {
@@ -192,7 +165,7 @@ function registerCekilisModule(client) {
 
                     const endedEmbed = new EmbedBuilder()
                         .setColor('#ED4245')
-                        .setTitle('🎉 **ÇEKİLİŞ SONUÇLANDI** 🎉')
+                        .setTitle(`🎉 **${title} - SONUÇLANDI** 🎉`)
                         .setDescription(`🎁 **Ödül:** **${prize}**\n👑 **Kazananlar:** ${winnersText}`)
                         .setTimestamp();
 
@@ -215,7 +188,7 @@ function registerCekilisModule(client) {
             }, 5000);
         }
 
-        // 3. Katılma / Çıkma ve İstatistik butonlarının yönetimi
+        // 3. Buton etkileşimleri (Katılma ve Oranları Görme)
         if (interaction.isButton()) {
             const giveaway = giveaways.get(interaction.message.id);
 
@@ -243,7 +216,6 @@ function registerCekilisModule(client) {
                 }
             }
 
-            // Kazanma Oranı ve Detaylar Butonu
             if (interaction.customId === 'giveaway_stats') {
                 if (!giveaway) {
                     return interaction.reply({ content: '❌ Bu çekilişe ait veri bulunamadı.', ephemeral: true });
@@ -256,7 +228,7 @@ function registerCekilisModule(client) {
                 }
 
                 return interaction.reply({
-                    content: `📊 **Çekiliş İstatistikleri & Bilgileri:**\n- 🎁 Ödül: **${giveaway.prize}**\n- 👥 Toplam Katılımcı: **${totalParticipants} kişi**\n- 👑 Kazanacak Kişi: **${giveaway.winnerCount} kişi**\n- 🍀 Tek Kişilik Kazanma Oranı: **${winChance}**`,
+                    content: `📊 **Çekiliş İstatistikleri:**\n- 👥 Toplam Katılımcı: **${totalParticipants} kişi**\n- 👑 Kazanacak Kişi: **${giveaway.winnerCount} kişi**\n- 🍀 Kazanma Oranın: **${winChance}**`,
                     ephemeral: true
                 });
             }
