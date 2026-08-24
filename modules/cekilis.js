@@ -13,7 +13,7 @@ function registerCekilisModule(client) {
             const panelEmbed = new EmbedBuilder()
                 .setColor('#2b2d31')
                 .setTitle('🛠️ Çekiliş Yönetim Paneli')
-                .setDescription('Aşağıdaki **"Çekiliş Başlat"** butonuna tıklayarak açılan pencereden başlığı, ödülü, açıklamayı, rengi, süreyi ve kazanan sayısını kolayca belirleyebilirsin.');
+                .setDescription('Aşağıdaki **"Çekiliş Başlat"** butonuna tıklayarak açılan pencereden başlığı, ödülü, açıklamayı, süreyi ve kazanan sayısını kolayca belirleyebilirsin.');
 
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
@@ -29,7 +29,7 @@ function registerCekilisModule(client) {
     // 2. Tüm etkileşimler (Butonlar ve Modaller)
     client.on('interactionCreate', async interaction => {
         try {
-            // "Çekiliş Başlat" butonuna basıldığında modal formunu açar
+            // "Çekiliş Başlat" butonuna basıldığında modal formunu açar (Maksimum 5 bileşen sınırı karşılandı)
             if (interaction.isButton() && interaction.customId === 'open_giveaway_modal') {
                 const modal = new ModalBuilder()
                     .setCustomId('giveaway_modal')
@@ -56,13 +56,6 @@ function registerCekilisModule(client) {
                     .setPlaceholder('Katılım şartları veya ek açıklamalar...')
                     .setRequired(false);
 
-                const colorInput = new TextInputBuilder()
-                    .setCustomId('giveaway_color')
-                    .setLabel('Embed Rengi (Hex Kod)')
-                    .setStyle(TextInputStyle.Short)
-                    .setPlaceholder('Örn: #5865F2')
-                    .setRequired(false);
-
                 const durationInput = new TextInputBuilder()
                     .setCustomId('giveaway_duration')
                     .setLabel('Süre (Dakika)')
@@ -81,7 +74,6 @@ function registerCekilisModule(client) {
                     new ActionRowBuilder().addComponents(titleInput),
                     new ActionRowBuilder().addComponents(prizeInput),
                     new ActionRowBuilder().addComponents(descInput),
-                    new ActionRowBuilder().addComponents(colorInput),
                     new ActionRowBuilder().addComponents(durationInput),
                     new ActionRowBuilder().addComponents(winnersInput)
                 );
@@ -91,16 +83,12 @@ function registerCekilisModule(client) {
 
             // Modal gönderildiğinde (Submit)
             if (interaction.isModalSubmit() && interaction.customId === 'giveaway_modal') {
-                await interaction.deferReply({ ephemeral: true });
+                await interaction.deferReply({ flags: 6 }); // Ephemeral yanıt için flag kullanımı
 
                 const title = interaction.fields.getTextInputValue('giveaway_title');
                 const prize = interaction.fields.getTextInputValue('giveaway_prize');
                 const description = interaction.fields.getTextInputValue('giveaway_desc') || 'Ek açıklama bulunmuyor.';
-                let color = interaction.fields.getTextInputValue('giveaway_color') || '#5865F2';
-                
-                if (!color.startsWith('#') && color.length === 6) {
-                    color = `#${color}`;
-                }
+                const color = '#5865F2'; // Sabit şık Discord mavisi
 
                 const durationMinutes = parseInt(interaction.fields.getTextInputValue('giveaway_duration'));
                 const winnerCount = parseInt(interaction.fields.getTextInputValue('giveaway_winners'));
@@ -203,7 +191,7 @@ function registerCekilisModule(client) {
 
                 if (interaction.customId === 'join_giveaway') {
                     if (!giveaway || giveaway.ended) {
-                        return interaction.reply({ content: '❌ Bu çekiliş sona ermiş!', ephemeral: true });
+                        return interaction.reply({ content: '❌ Bu çekiliş sona ermiş!', flags: 6 });
                     }
 
                     if (giveaway.participants.has(interaction.user.id)) {
@@ -213,7 +201,7 @@ function registerCekilisModule(client) {
                         const newRow = new ActionRowBuilder().addComponents(newButton, oldRow.components[1]);
 
                         await interaction.message.edit({ components: [newRow] });
-                        return interaction.reply({ content: '❌ Çekilişten başarıyla çıkış yaptın!', ephemeral: true });
+                        return interaction.reply({ content: '❌ Çekilişten başarıyla çıkış yaptın!', flags: 6 });
                     } else {
                         giveaway.participants.add(interaction.user.id);
                         const oldRow = interaction.message.components[0];
@@ -221,13 +209,13 @@ function registerCekilisModule(client) {
                         const newRow = new ActionRowBuilder().addComponents(newButton, oldRow.components[1]);
 
                         await interaction.message.edit({ components: [newRow] });
-                        return interaction.reply({ content: '✅ Başarıyla çekilişe katıldın!', ephemeral: true });
+                        return interaction.reply({ content: '✅ Başarıyla çekilişe katıldın!', flags: 6 });
                     }
                 }
 
                 if (interaction.customId === 'giveaway_stats') {
                     if (!giveaway) {
-                        return interaction.reply({ content: '❌ Bu çekilişe ait veri bulunamadı.', ephemeral: true });
+                        return interaction.reply({ content: '❌ Bu çekilişe ait veri bulunamadı.', flags: 6 });
                     }
 
                     const totalParticipants = giveaway.participants.size;
@@ -238,14 +226,14 @@ function registerCekilisModule(client) {
 
                     return interaction.reply({
                         content: `📊 **Çekiliş İstatistikleri:**\n- 👥 Toplam Katılımcı: **${totalParticipants} kişi**\n- 👑 Kazanacak Kişi: **${giveaway.winnerCount} kişi**\n- 🍀 Kazanma Oranın: **${winChance}**`,
-                        ephemeral: true
+                        flags: 6
                     });
                 }
             }
         } catch (err) {
             console.error("Çekiliş etkileşim hatası:", err);
             if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: '❌ İşlem sırasında bir hata oluştu.', ephemeral: true }).catch(() => {});
+                await interaction.reply({ content: '❌ İşlem sırasında bir hata oluştu.', flags: 6 }).catch(() => {});
             }
         }
     });
