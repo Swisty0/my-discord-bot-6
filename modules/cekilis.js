@@ -29,7 +29,7 @@ function registerCekilisModule(client) {
     // 2. Tüm etkileşimler (Butonlar ve Modaller)
     client.on('interactionCreate', async interaction => {
         try {
-            // "Çekiliş Başlat" butonuna basıldığında modal formunu açar (Maksimum 5 bileşen sınırı karşılandı)
+            // "Çekiliş Başlat" butonuna basıldığında modal formunu açar
             if (interaction.isButton() && interaction.customId === 'open_giveaway_modal') {
                 const modal = new ModalBuilder()
                     .setCustomId('giveaway_modal')
@@ -83,12 +83,12 @@ function registerCekilisModule(client) {
 
             // Modal gönderildiğinde (Submit)
             if (interaction.isModalSubmit() && interaction.customId === 'giveaway_modal') {
-                await interaction.deferReply({ flags: 6 }); // Ephemeral yanıt için flag kullanımı
+                await interaction.deferReply({ flags: 6 });
 
                 const title = interaction.fields.getTextInputValue('giveaway_title');
                 const prize = interaction.fields.getTextInputValue('giveaway_prize');
                 const description = interaction.fields.getTextInputValue('giveaway_desc') || 'Ek açıklama bulunmuyor.';
-                const color = '#5865F2'; // Sabit şık Discord mavisi
+                const color = '#5865F2';
 
                 const durationMinutes = parseInt(interaction.fields.getTextInputValue('giveaway_duration'));
                 const winnerCount = parseInt(interaction.fields.getTextInputValue('giveaway_winners'));
@@ -185,7 +185,7 @@ function registerCekilisModule(client) {
                 }, 5000);
             }
 
-            // Katılma ve Oranları Görme Butonları
+            // Katılma ve Oranları Görme Butonları (Sadece kişiye özel görünür - Ephemeral)
             if (interaction.isButton() && interaction.customId !== 'open_giveaway_modal') {
                 const giveaway = giveaways.get(interaction.message.id);
 
@@ -201,6 +201,7 @@ function registerCekilisModule(client) {
                         const newRow = new ActionRowBuilder().addComponents(newButton, oldRow.components[1]);
 
                         await interaction.message.edit({ components: [newRow] });
+                        // Sadece butona basana görünür, sohbete gitmez
                         return interaction.reply({ content: '❌ Çekilişten başarıyla çıkış yaptın!', flags: 6 });
                     } else {
                         giveaway.participants.add(interaction.user.id);
@@ -209,6 +210,7 @@ function registerCekilisModule(client) {
                         const newRow = new ActionRowBuilder().addComponents(newButton, oldRow.components[1]);
 
                         await interaction.message.edit({ components: [newRow] });
+                        // Sadece butona basana görünür, sohbete gitmez
                         return interaction.reply({ content: '✅ Başarıyla çekilişe katıldın!', flags: 6 });
                     }
                 }
