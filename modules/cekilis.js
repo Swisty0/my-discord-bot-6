@@ -26,7 +26,7 @@ function registerCekilisModule(client) {
         }
     });
 
-    // 2. Buton ve Modal Etkileşimleri (Zaman aşımı hatasını önlemek için anında yanıt veriyoruz)
+    // 2. Tüm etkileşimler (Butonlar ve Modaller)
     client.on('interactionCreate', async interaction => {
         try {
             // "Çekiliş Başlat" butonuna basıldığında modal formunu açar
@@ -53,7 +53,7 @@ function registerCekilisModule(client) {
                     .setCustomId('giveaway_desc')
                     .setLabel('Açıklama / Kurallar')
                     .setStyle(TextInputStyle.Paragraph)
-                    .setPlaceholder('Katılım şartları veya ek açıklamalar yazabilirsiniz...')
+                    .setPlaceholder('Katılım şartları veya ek açıklamalar...')
                     .setRequired(false);
 
                 const colorInput = new TextInputBuilder()
@@ -89,9 +89,8 @@ function registerCekilisModule(client) {
                 return await interaction.showModal(modal);
             }
 
-            // Modal gönderildiğinde çekilişi oluşturur
+            // Modal gönderildiğinde (Submit)
             if (interaction.isModalSubmit() && interaction.customId === 'giveaway_modal') {
-                // Zaman aşımına karşı önce deferReply ya da hızlıca ephemeral bir onay veriyoruz
                 await interaction.deferReply({ ephemeral: true });
 
                 const title = interaction.fields.getTextInputValue('giveaway_title');
@@ -99,7 +98,6 @@ function registerCekilisModule(client) {
                 const description = interaction.fields.getTextInputValue('giveaway_desc') || 'Ek açıklama bulunmuyor.';
                 let color = interaction.fields.getTextInputValue('giveaway_color') || '#5865F2';
                 
-                // Renk kodunun başında # yoksa ekleyelim ki hata vermesin
                 if (!color.startsWith('#') && color.length === 6) {
                     color = `#${color}`;
                 }
@@ -145,7 +143,7 @@ function registerCekilisModule(client) {
                     title
                 });
 
-                await interaction.editReply({ content: '✅ İstediğin ayarlarla çekiliş başarıyla başlatıldı!' });
+                await interaction.editReply({ content: '✅ Çekiliş başarıyla başlatıldı!' });
 
                 // Süre bitim kontrolü
                 const interval = setInterval(async () => {
