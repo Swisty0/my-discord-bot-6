@@ -22,6 +22,7 @@ const { registerTempMailModule } = require('./modules/tempmail');
 const { registerCopyModule } = require('./modules/kopyala');
 const { registerListDmModule } = require('./modules/listdm');
 const { registerStatsModule } = require('./modules/stats');
+const { registerTicketModule } = require('./modules/ticket');
 
 
 const client = new Client({
@@ -46,6 +47,7 @@ registerCopyModule(client);
 registerListDmModule(client);
 registerWelcomeModule(client);
 registerStatsModule(client);
+registerTicketModule(client);
 
 
 client.login(process.env.TOKEN);
