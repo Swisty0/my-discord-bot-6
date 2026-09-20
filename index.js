@@ -7,7 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-    res.send('Project Swisty Bot 7/24 aktif!');
+    res.send('Project Swisty Bot 7/24 aktif!!');
 });
 
 app.listen(PORT, () => {
